@@ -17,7 +17,14 @@
   select { border:1px solid #777; border-radius:2px; padding:4px 6px; background:#fff; font-size:13px; }
   button { border:1px solid #555; border-radius:3px; background:#fff; padding:6px 14px; cursor:pointer; font-size:13px; font-weight:bold; }
   button:hover { background:#e2e2e2; }
+  button:disabled { opacity:0.6; cursor:default; }
   .btn-print { background:#1976d2 !important; color:#fff !important; border-color:#1565c0 !important; }
+  
+  /* 保存状態表示 */
+  #saveStatus { font-size:12px; font-weight:bold; color:#666; }
+  #saveStatus.saving { color:#e65100; }
+  #saveStatus.saved { color:#2e7d32; }
+  #saveStatus.error { color:#c62828; }
   
   /* 用紙（A4横レイアウト） */
   .page { width:285mm; min-height:198mm; margin:0 auto; padding:8mm 10mm; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.15); position:relative; }
@@ -38,6 +45,9 @@
 
   /* 入力・ドロップダウン（描画ずれ・文字隠れをCSSで完全解消） */
   input.cell-in { width:100%; height:100%; border:0; background:transparent; text-align:center; font-size:10px; font-weight:bold; outline:none; }
+  
+  /* 施工担当者確認欄（赤字） */
+  input.confirm-in { color:#e60000; }
   
   select.cell-sel {
     width:100%; height:100%; border:0; background:transparent;
@@ -75,7 +85,7 @@
     .top-header, table.check-tbl, .bottom-area { min-width:760px; }
   }
 
-  /* 印刷・PDF用設定 */
+  /* 印刷用設定（ブラウザ印刷した場合の保険） */
   @media print {
     @page { size:A4 landscape; margin:0; }
     body { padding:0; background:#fff; }
@@ -88,13 +98,14 @@
 <body>
 
 <section class="controls">
-  <p>【操作】日付を追加すると1列目から順に「－」記号が入ります。必要に応じて「○」「×」「A」に変更してください。</p>
+  <p>【操作】日付を追加すると1列目から順に「－」記号が入ります。必要に応じて「○」「×」「A」に変更してください。入力内容は自動的にスプレッドシートへ保存されます。</p>
   <label>月: <select id="newMonth"></select></label>
   <label>日: <select id="newDay"></select></label>
   <button type="button" id="addDate">日付を追加</button>
   <label style="margin-left:10px;">登録日: <select id="removeDate"></select></label>
   <button type="button" id="removeDateButton">選択した日付を削除</button>
-  <button type="button" class="btn-print" id="print" style="margin-left:auto;">PDFとして保存・印刷</button>
+  <span id="saveStatus">読み込み中...</span>
+  <button type="button" class="btn-print" id="print" style="margin-left:auto;">PDF出力</button>
 </section>
 
 <main class="page" id="exportArea">
@@ -190,7 +201,14 @@
   </div>
 </main>
 
+<!-- PDF生成ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script>
+// ★ここをGASのウェブアプリURLに書き換えてください
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbykf41L6fFpLUiz3Tg8CvFn9yt1I0MYMXJ70bbPe547JD8jkMZcAdshufdT6C14Tazc/exec';
+
 const items = [
  ['油量点検・補給','E／Gｵｲﾙﾊﾟﾝ・作動油ﾀﾝｸ・ﾊﾞｯﾃﾘｰ液'],
  ['冷却水・各ﾍﾞﾙﾄの張り','冷却水量・汚れ・ｴﾝｼﾞﾝＶﾍﾞﾙﾄ等'],
@@ -206,9 +224,77 @@ const items = [
 ];
 
 const MAX_COLUMNS = 16;
+const CONFIRM_DEFAULT = '済';
 let dates = [];
 let entriesData = {};
+let saveTimer = null;
+let loaded = false; // 読み込み完了前に保存して上書きするのを防ぐ
 
+/* ===== 保存状態の表示 ===== */
+function setStatus(text, cls){
+  const el = document.getElementById('saveStatus');
+  if(!el) return;
+  el.textContent = text;
+  el.className = cls || '';
+}
+
+/* ===== 下部情報欄（点検者名など）の収集・反映 ===== */
+function collectInfo(){
+  return [...document.querySelectorAll('table.info-tbl input.cell-in')].map(i => i.value);
+}
+
+function applyInfo(arr){
+  const inputs = document.querySelectorAll('table.info-tbl input.cell-in');
+  (arr || []).forEach((v, i) => { if(inputs[i]) inputs[i].value = v; });
+}
+
+/* ===== 保存（連続操作をまとめるため0.8秒待つ） ===== */
+function saveData(){
+  if(!loaded) return;
+  clearTimeout(saveTimer);
+  setStatus('保存中...', 'saving');
+  saveTimer = setTimeout(() => {
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'}, // CORSの事前確認(プリフライト)を避けるため
+      body: JSON.stringify({ dates, entriesData, info: collectInfo() })
+    })
+    .then(res => res.json())
+    .then(() => setStatus('保存済み', 'saved'))
+    .catch(err => {
+      console.error('保存失敗', err);
+      setStatus('保存失敗（通信を確認してください）', 'error');
+    });
+  }, 800);
+}
+
+/* ===== 読み込み ===== */
+async function loadData(){
+  try {
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
+    if(Array.isArray(data.dates)) dates = data.dates;
+    if(data.entriesData && typeof data.entriesData === 'object') entriesData = data.entriesData;
+    applyInfo(data.info);
+
+    // 旧データ互換：日付がある列の確認欄が「－」なら「済」に置き換える
+    for(let col=0; col<dates.length; col++){
+      const key = `confirm_${col}`;
+      if(entriesData[key] === '－' || entriesData[key] === undefined){
+        entriesData[key] = CONFIRM_DEFAULT;
+      }
+    }
+
+    loaded = true;
+    setStatus('読み込み完了', 'saved');
+  } catch(err) {
+    console.error('読み込み失敗', err);
+    // 読み込み失敗時は上書き事故を防ぐため loaded を true にしない
+    setStatus('読み込み失敗（ページを再読み込みしてください）', 'error');
+  }
+}
+
+/* ===== 画面コントロール ===== */
 function initControls(){
   const month = document.getElementById('newMonth');
   const day = document.getElementById('newDay');
@@ -231,6 +317,7 @@ function setRemoveControls(){
   if(btn) btn.disabled = dates.length === 0;
 }
 
+/* ===== 描画 ===== */
 function draw(){
   const header = document.getElementById('dateRow');
   const body = document.getElementById('checkBody');
@@ -249,6 +336,7 @@ function draw(){
     input.oninput = function(){
       dates[col] = this.value.trim();
       setRemoveControls();
+      saveData();
     };
     th.appendChild(input);
     header.appendChild(th);
@@ -275,6 +363,7 @@ function draw(){
       select.className = 'cell-sel';
       select.onchange = function(){
         entriesData[key] = this.value;
+        saveData();
       };
 
       ['', '○', '×', 'A', '－'].forEach(optVal => {
@@ -291,22 +380,23 @@ function draw(){
     body.appendChild(tr);
   });
 
-  // 3. 施工担当者確認印
+  // 3. 施工担当者確認（赤字「済」）
   confirmRow.innerHTML = '<td colspan="3" style="font-weight:bold; font-size:10.5px;">施工担当者　確認</td>';
   for(let col=0; col<MAX_COLUMNS; col++){
     const td = document.createElement('td');
     const key = `confirm_${col}`;
     let val = entriesData[key];
     if(val === undefined){
-      val = (col < dates.length) ? '－' : '';
+      val = (col < dates.length) ? CONFIRM_DEFAULT : '';
       entriesData[key] = val;
     }
 
     const input = document.createElement('input');
-    input.className = 'cell-in';
+    input.className = 'cell-in confirm-in';
     input.value = val;
     input.oninput = function(){
       entriesData[key] = this.value;
+      saveData();
     };
 
     td.appendChild(input);
@@ -316,8 +406,87 @@ function draw(){
   setRemoveControls();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+/* ===== PDF出力（生成して新しいタブに表示） ===== */
+async function exportPdf(){
+  const btn = document.getElementById('print');
+  const originalText = btn.textContent;
+
+  // スマホのポップアップブロック対策：クリック直後にタブを開いておく
+  const win = window.open('', '_blank');
+  if(win){
+    win.document.write('<p style="font-family:sans-serif;padding:20px;">PDFを生成しています...</p>');
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'PDF生成中...';
+
+  try {
+    if(typeof html2canvas === 'undefined' || !window.jspdf){
+      throw new Error('PDFライブラリの読み込みに失敗しました。通信環境を確認してください。');
+    }
+
+    const target = document.getElementById('exportArea');
+    const prevStyle = {
+      width: target.style.width,
+      minWidth: target.style.minWidth,
+      boxShadow: target.style.boxShadow
+    };
+
+    // 画面幅に関係なく、A4横の見た目で出力するため幅を固定する
+    target.style.width = '285mm';
+    target.style.minWidth = '285mm';
+    target.style.boxShadow = 'none';
+
+    // selectの▼などが写り込まないよう、入力値をそのまま描画
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      windowWidth: target.scrollWidth
+    });
+
+    target.style.width = prevStyle.width;
+    target.style.minWidth = prevStyle.minWidth;
+    target.style.boxShadow = prevStyle.boxShadow;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();   // 297
+    const pageH = pdf.internal.pageSize.getHeight();  // 210
+
+    // A4に収まるよう縦横比を保って縮小・中央寄せ
+    const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+    const imgW = canvas.width * ratio;
+    const imgH = canvas.height * ratio;
+    const x = (pageW - imgW) / 2;
+    const y = (pageH - imgH) / 2;
+
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, y, imgW, imgH);
+
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+
+    if(win){
+      win.location.href = url;   // 新しいタブでPDFを表示
+    } else {
+      window.location.href = url; // タブを開けない場合は同じタブで表示
+    }
+  } catch(err) {
+    console.error(err);
+    if(win) win.close();
+    alert('PDF出力に失敗しました：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+/* ===== 起動処理 ===== */
+document.addEventListener('DOMContentLoaded', async () => {
   initControls();
+
+  // 先に保存済みデータを読み込む
+  await loadData();
 
   // 日付の追加
   document.getElementById('addDate').addEventListener('click', () => {
@@ -338,10 +507,11 @@ document.addEventListener('DOMContentLoaded', () => {
     for(let r=0; r<items.length; r++){
       entriesData[`${r}_${newColIdx}`] = '－';
     }
-    entriesData[`confirm_${newColIdx}`] = '－';
+    entriesData[`confirm_${newColIdx}`] = CONFIRM_DEFAULT;
 
     dates.push(value);
     draw();
+    saveData();
   });
 
   // 日付の削除
@@ -362,12 +532,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dates.splice(index, 1);
     draw();
+    saveData();
   });
 
-  // PDF保存・印刷
-  document.getElementById('print').addEventListener('click', () => {
-    window.print();
+  // 点検者名など下部欄の変更も保存
+  document.querySelectorAll('table.info-tbl input.cell-in').forEach(i => {
+    i.addEventListener('input', saveData);
   });
+
+  // PDF出力
+  document.getElementById('print').addEventListener('click', exportPdf);
 
   draw();
 });
