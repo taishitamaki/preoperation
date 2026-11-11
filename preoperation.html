@@ -84,7 +84,6 @@
   }
   .pdf-sym.is-circle { font-size:8px; }
 
-  /* PDF出力時に日付inputの代わりに表示するテキスト（全桁表示） */
   .pdf-date {
     display:flex; align-items:center; justify-content:center;
     width:100%; height:20px; font-size:8px; font-weight:bold; line-height:1;
@@ -106,6 +105,10 @@
   table.info-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
   table.info-tbl th, table.info-tbl td { border:1px solid var(--line); padding:2px 3px; font-size:10px; text-align:center; height:26px; }
   table.info-tbl th { font-weight:normal; background:#fff; }
+
+  /* 資格者証の写真 */
+  .id-photo-wrap { margin-top:4px; text-align:center; }
+  .id-photo-wrap img { display:block; margin:0 auto; max-width:100%; max-height:46mm; width:auto; height:auto; object-fit:contain; }
 
   @media screen and (max-width:480px) {
     body { padding:0; background:#fff; }
@@ -222,7 +225,7 @@
         <tr>
           <td colspan="2"></td>
           <th>管理番号</th>
-          <td><input class="cell-in" value="" aria-label="管理番号"></td>
+          <td><input class="cell-in" value="北町BH" aria-label="管理番号"></td>
         </tr>
         <tr>
           <th colspan="4" style="height:20px;">資　格　者　証　等</th>
@@ -231,6 +234,9 @@
           <td colspan="4" style="height:42px;"><input class="cell-in" value="車両系建設機械技能講習" style="font-size:11.5px;" aria-label="資格者証等"></td>
         </tr>
       </table>
+      <div class="id-photo-wrap">
+        <img id="idPhoto" src="id.jpg" alt="資格者証" crossorigin="anonymous">
+      </div>
     </div>
   </div>
 </main>
@@ -306,7 +312,12 @@ async function loadData(){
     const data = await res.json();
     if(Array.isArray(data.dates)) dates = data.dates;
     if(data.entriesData && typeof data.entriesData === 'object') entriesData = data.entriesData;
+
+    // 管理番号が未保存（空）の場合は初期値「北町BH」を維持するため、空の保存値では上書きしない
+    const infoInputs = document.querySelectorAll('table.info-tbl input.cell-in');
+    const defaultKanri = infoInputs[4] ? infoInputs[4].value : '';
     applyInfo(data.info);
+    if(infoInputs[4] && !infoInputs[4].value) infoInputs[4].value = defaultKanri;
 
     for(let col=0; col<dates.length; col++){
       const key = `confirm_${col}`;
@@ -563,7 +574,6 @@ async function exportPdf(){
       replaced.push({ sel, span });
     });
 
-    // 日付欄：inputのままだと html2canvas が長い文字を切るため、テキスト表示に置き換える
     target.querySelectorAll('#dateRow input.cell-in').forEach(inp => {
       const span = document.createElement('div');
       span.className = 'pdf-date';
