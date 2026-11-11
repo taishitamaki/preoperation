@@ -8,8 +8,7 @@
   :root { --line:#000; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { padding:12px; background:#eef1f4; color:#000; font-family:"Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif; }
-  
-  /* 操作エリア */
+
   .controls { max-width:1120px; margin:0 auto 12px; padding:12px 16px; background:#fff; border:1px solid #c8cdd2; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
   .controls p { width:100%; margin:0 0 3px; font-size:13px; line-height:1.45; }
   label { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:bold; }
@@ -19,36 +18,57 @@
   button:hover { background:#e2e2e2; }
   button:disabled { opacity:0.6; cursor:default; }
   .btn-print { background:#1976d2 !important; color:#fff !important; border-color:#1565c0 !important; }
-  
-  /* 保存状態表示 */
+
   #saveStatus { font-size:12px; font-weight:bold; color:#666; }
   #saveStatus.saving { color:#e65100; }
   #saveStatus.saved { color:#2e7d32; }
   #saveStatus.error { color:#c62828; }
-  
-  /* 用紙（A4横レイアウト） */
+
+  .wizard { max-width:1120px; margin:0 auto 12px; background:#fff; border:1px solid #c8cdd2; padding:14px 16px; }
+  .wizard h2 { font-size:15px; margin-bottom:8px; }
+  .wz-empty { font-size:13px; color:#666; padding:8px 0; }
+  .wz-daybar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .wz-daybar select { flex:1; height:40px; font-size:15px; }
+  .wz-progress { font-size:12px; font-weight:bold; color:#555; margin-bottom:4px; }
+  .wz-bar { height:6px; background:#e0e4e8; border-radius:3px; overflow:hidden; margin-bottom:12px; }
+  .wz-bar > div { height:100%; background:#1976d2; width:0; transition:width .2s; }
+  .wz-card { border:2px solid #1976d2; border-radius:8px; padding:14px 12px; margin-bottom:12px; background:#f7fbff; }
+  .wz-card .wz-no { font-size:12px; font-weight:bold; color:#1976d2; }
+  .wz-card .wz-item { font-size:20px; font-weight:bold; margin:4px 0; line-height:1.3; }
+  .wz-card .wz-focus { font-size:14px; color:#333; line-height:1.4; }
+  .wz-choices { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .wz-choices button { height:64px; font-size:17px; border-width:2px; border-radius:8px; line-height:1.2; }
+  .wz-choices button small { display:block; font-size:11px; font-weight:normal; }
+  .wz-choices button.sel { background:#1976d2; color:#fff; border-color:#1565c0; }
+  .wz-nav { display:flex; gap:10px; }
+  .wz-nav button { flex:1; height:46px; font-size:15px; }
+  .wz-confirm { margin-top:10px; display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; }
+  .wz-confirm input { border:1px solid #777; border-radius:2px; padding:6px; width:80px; color:#e60000; font-weight:bold; text-align:center; font-size:15px; }
+  .wz-bulk { margin-top:10px; }
+  .wz-bulk button { width:100%; height:40px; font-size:13px; }
+  .wz-done { text-align:center; padding:10px 0; font-size:15px; font-weight:bold; color:#2e7d32; }
+
+  .preview-title { max-width:1120px; margin:0 auto 6px; font-size:14px; font-weight:bold; }
+
   .page { width:285mm; min-height:198mm; margin:0 auto; padding:8mm 10mm; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.15); position:relative; }
-  
-  /* ヘッダー */
+
   .top-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
   .top-header h1 { font-size:22px; font-weight:bold; letter-spacing:0.4em; margin:0; text-align:center; flex:1; margin-left:80px; }
   .form-code { font-family:Arial, sans-serif; font-size:9px; text-align:right; line-height:1.2; width:120px; }
 
   .legend-bar { font-size:10.5px; margin-bottom:4px; white-space:nowrap; }
 
-  /* 点検メインテーブル */
   table.check-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
   table.check-tbl th, table.check-tbl td { border:1px solid var(--line); padding:0; text-align:center; font-size:10px; vertical-align:middle; height:20px; background:#fff; overflow:hidden; }
 
   .focus-cell { text-align:left !important; padding-left:4px !important; font-size:9.5px; }
   .item-cell { font-size:10px; }
 
-  /* 入力・ドロップダウン（描画ずれ・文字隠れをCSSで完全解消） */
   input.cell-in { width:100%; height:100%; border:0; background:transparent; text-align:center; font-size:10px; font-weight:bold; outline:none; }
-  
-  /* 施工担当者確認欄（赤字） */
+  table.check-tbl thead input.cell-in { font-size:8.5px; padding:0; letter-spacing:-0.5px; }
+
   input.confirm-in { color:#e60000; }
-  
+
   select.cell-sel {
     width:100%; height:100%; border:0; background:transparent;
     text-align:center; text-align-last:center; font-size:11px; font-weight:bold;
@@ -57,47 +77,52 @@
   }
   select.cell-sel::-ms-expand { display:none; }
 
-  /* PDF出力時に select の代わりに表示するテキスト */
   .pdf-sym {
     display:flex; align-items:center; justify-content:center;
     width:100%; height:20px; font-size:11px; font-weight:bold; line-height:1;
     font-family:"Hiragino Kaku Gothic ProN","Meiryo",Arial,sans-serif;
   }
-  .pdf-sym.is-circle { font-size:8px; } /* 〇のみ小さく */
+  .pdf-sym.is-circle { font-size:8px; }
 
-  /* 下部レイアウト */
+  /* PDF出力時に日付inputの代わりに表示するテキスト（全桁表示） */
+  .pdf-date {
+    display:flex; align-items:center; justify-content:center;
+    width:100%; height:20px; font-size:8px; font-weight:bold; line-height:1;
+    letter-spacing:-0.6px; white-space:nowrap; overflow:visible;
+    font-family:"Hiragino Kaku Gothic ProN","Meiryo",Arial,sans-serif;
+  }
+
   .bottom-area { display:flex; gap:12px; margin-top:8px; align-items:flex-start; }
   .bottom-left { flex:1.15; }
   .sub-title { font-size:16px; font-weight:bold; margin:0 0 6px; border-bottom:2.5px solid #000; padding-bottom:1px; }
-  
+
   .notes-block { font-size:9.5px; line-height:1.35; }
   .notes-block p { font-weight:bold; margin:2px 0 1px; }
   .notes-block ol { margin:0; padding-left:1.4em; }
 
   .slogan { margin-top:10px; font-size:10px; font-weight:bold; text-align:center; }
 
-  /* 右下整理表 */
   .bottom-right { flex:1; }
   table.info-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
   table.info-tbl th, table.info-tbl td { border:1px solid var(--line); padding:2px 3px; font-size:10px; text-align:center; height:26px; }
   table.info-tbl th { font-weight:normal; background:#fff; }
 
-  /* iPhone SE対応 */
   @media screen and (max-width:480px) {
     body { padding:0; background:#fff; }
     .controls { margin:0; padding:10px; border-radius:0; border-width:0 0 1px; gap:8px; }
     .controls label { flex:1 1 45%; }
     .controls select { width:100%; height:36px; }
     .controls button { flex:1 1 100%; height:38px; }
+    .wizard { margin:0; border-width:0 0 1px; }
+    .preview-title { padding:6px 10px 0; }
     .page { width:100%; min-height:auto; padding:6px; box-shadow:none; overflow-x:auto; }
     .top-header, table.check-tbl, .bottom-area { min-width:760px; }
   }
 
-  /* 印刷用設定（ブラウザ印刷した場合の保険） */
   @media print {
     @page { size:A4 landscape; margin:0; }
     body { padding:0; background:#fff; }
-    .controls { display:none !important; }
+    .controls, .wizard, .preview-title { display:none !important; }
     .page { width:297mm; height:210mm; margin:0; padding:8mm 10mm; box-shadow:none; page-break-after:always; }
     select.cell-sel { border:none; background:transparent; appearance:none; -webkit-appearance:none; }
   }
@@ -106,7 +131,7 @@
 <body>
 
 <section class="controls">
-  <p>【操作】日付を追加すると1列目から順に「－」記号が入ります。必要に応じて「○」「×」「A」に変更してください。入力内容は自動的にスプレッドシートへ保存されます。</p>
+  <p>【操作】日付を追加すると1列目から順に「－」記号が入ります。下の「一問一答入力」で項目ごとに○・×・A・－を選んでください。入力内容は自動的にスプレッドシートへ保存されます。</p>
   <label>月: <select id="newMonth"></select></label>
   <label>日: <select id="newDay"></select></label>
   <button type="button" id="addDate">日付を追加</button>
@@ -116,8 +141,14 @@
   <button type="button" class="btn-print" id="print" style="margin-left:auto;">PDF出力</button>
 </section>
 
+<section class="wizard" id="wizard">
+  <h2>一問一答入力</h2>
+  <div id="wizardBody"></div>
+</section>
+
+<div class="preview-title">▼ プレビュー（入力内容の確認）</div>
+
 <main class="page" id="exportArea">
-  <!-- ヘッダー -->
   <header class="top-header">
     <h1>機　械　点　検　表</h1>
     <div class="form-code">
@@ -130,13 +161,11 @@
     使用前の点検結果は次の記号で書き入れる。　　良好…○　  調整又は要修理…×　　調整又は補修…A　　該当無し…－
   </div>
 
-  <!-- 点検メインテーブル -->
   <table class="check-tbl">
     <colgroup>
       <col style="width:3.5%;">
       <col style="width:17.5%;">
       <col style="width:33%;">
-      <!-- 16列固定 (2.875% * 16 = 46%) -->
       <col style="width:2.875%;" span="16">
     </colgroup>
     <thead>
@@ -154,9 +183,7 @@
     </tfoot>
   </table>
 
-  <!-- 下部エリア -->
   <div class="bottom-area">
-    <!-- 左側: 注意事項・作業手順・標語 -->
     <div class="bottom-left">
       <div class="sub-title">B2 バックホウ日々点検表</div>
       <div class="notes-block">
@@ -178,7 +205,6 @@
       <div class="slogan">機械は点検、作業は手順、あわせて築く無災害＜東亜道路工業＞</div>
     </div>
 
-    <!-- 右側: 属性表 -->
     <div class="bottom-right">
       <table class="info-tbl">
         <tr>
@@ -209,12 +235,10 @@
   </div>
 </main>
 
-<!-- PDF生成ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
-// ★ここをGASのウェブアプリURLに書き換えてください
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbykf41L6fFpLUiz3Tg8CvFn9yt1I0MYMXJ70bbPe547JD8jkMZcAdshufdT6C14Tazc/exec';
 
 const items = [
@@ -236,9 +260,11 @@ const CONFIRM_DEFAULT = '済';
 let dates = [];
 let entriesData = {};
 let saveTimer = null;
-let loaded = false; // 読み込み完了前に保存して上書きするのを防ぐ
+let loaded = false;
 
-/* ===== 保存状態の表示 ===== */
+let wzCol = 0;
+let wzStep = 0;
+
 function setStatus(text, cls){
   const el = document.getElementById('saveStatus');
   if(!el) return;
@@ -246,7 +272,6 @@ function setStatus(text, cls){
   el.className = cls || '';
 }
 
-/* ===== 下部情報欄（点検者名など）の収集・反映 ===== */
 function collectInfo(){
   return [...document.querySelectorAll('table.info-tbl input.cell-in')].map(i => i.value);
 }
@@ -256,7 +281,6 @@ function applyInfo(arr){
   (arr || []).forEach((v, i) => { if(inputs[i]) inputs[i].value = v; });
 }
 
-/* ===== 保存（連続操作をまとめるため0.8秒待つ） ===== */
 function saveData(){
   if(!loaded) return;
   clearTimeout(saveTimer);
@@ -264,7 +288,7 @@ function saveData(){
   saveTimer = setTimeout(() => {
     fetch(GAS_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'text/plain'}, // CORSの事前確認(プリフライト)を避けるため
+      headers: {'Content-Type': 'text/plain'},
       body: JSON.stringify({ dates, entriesData, info: collectInfo() })
     })
     .then(res => res.json())
@@ -276,7 +300,6 @@ function saveData(){
   }, 800);
 }
 
-/* ===== 読み込み ===== */
 async function loadData(){
   try {
     const res = await fetch(GAS_URL);
@@ -285,7 +308,6 @@ async function loadData(){
     if(data.entriesData && typeof data.entriesData === 'object') entriesData = data.entriesData;
     applyInfo(data.info);
 
-    // 旧データ互換：日付がある列の確認欄が「－」なら「済」に置き換える
     for(let col=0; col<dates.length; col++){
       const key = `confirm_${col}`;
       if(entriesData[key] === '－' || entriesData[key] === undefined){
@@ -297,12 +319,10 @@ async function loadData(){
     setStatus('読み込み完了', 'saved');
   } catch(err) {
     console.error('読み込み失敗', err);
-    // 読み込み失敗時は上書き事故を防ぐため loaded を true にしない
     setStatus('読み込み失敗（ページを再読み込みしてください）', 'error');
   }
 }
 
-/* ===== 画面コントロール ===== */
 function initControls(){
   const month = document.getElementById('newMonth');
   const day = document.getElementById('newDay');
@@ -325,7 +345,6 @@ function setRemoveControls(){
   if(btn) btn.disabled = dates.length === 0;
 }
 
-/* ===== 描画 ===== */
 function draw(){
   const header = document.getElementById('dateRow');
   const body = document.getElementById('checkBody');
@@ -333,7 +352,6 @@ function draw(){
 
   if(!header || !body || !confirmRow) return;
 
-  // 1. ヘッダー（日付）
   header.innerHTML = '';
   for(let col=0; col<MAX_COLUMNS; col++){
     const th = document.createElement('th');
@@ -344,24 +362,24 @@ function draw(){
     input.oninput = function(){
       dates[col] = this.value.trim();
       setRemoveControls();
+      renderWizard();
       saveData();
     };
     th.appendChild(input);
     header.appendChild(th);
   }
 
-  // 2. 点検項目（記号）
   body.innerHTML = '';
   items.forEach((item, row) => {
     const tr = document.createElement('tr');
-    
+
     tr.innerHTML = `<td class="num">${row+1}</td><td class="item-cell">${item[0]}</td><td class="focus-cell">${item[1]}</td>`;
 
     for(let col=0; col<MAX_COLUMNS; col++){
       const td = document.createElement('td');
       const key = `${row}_${col}`;
       let val = entriesData[key];
-      
+
       if(val === undefined){
         val = (col < dates.length) ? '－' : '';
         entriesData[key] = val;
@@ -371,6 +389,7 @@ function draw(){
       select.className = 'cell-sel';
       select.onchange = function(){
         entriesData[key] = this.value;
+        renderWizard();
         saveData();
       };
 
@@ -388,7 +407,6 @@ function draw(){
     body.appendChild(tr);
   });
 
-  // 3. 施工担当者確認（赤字「済」）
   confirmRow.innerHTML = '<td colspan="3" style="font-weight:bold; font-size:10.5px;">施工担当者　確認</td>';
   for(let col=0; col<MAX_COLUMNS; col++){
     const td = document.createElement('td');
@@ -412,14 +430,105 @@ function draw(){
   }
 
   setRemoveControls();
+  renderWizard();
 }
 
-/* ===== PDF出力（生成して新しいタブに表示） ===== */
+function renderWizard(){
+  const box = document.getElementById('wizardBody');
+  if(!box) return;
+
+  if(dates.length === 0){
+    box.innerHTML = '<div class="wz-empty">まず上の「日付を追加」で点検日を登録してください。</div>';
+    return;
+  }
+  if(wzCol >= dates.length) wzCol = dates.length - 1;
+  if(wzCol < 0) wzCol = 0;
+
+  const total = items.length;
+  const done = wzStep >= total;
+  const pct = Math.min(100, Math.round(wzStep / total * 100));
+
+  let html = '';
+  html += '<div class="wz-daybar"><label style="flex:0 0 auto;">点検日</label><select id="wzDate">';
+  dates.forEach((d, i) => {
+    html += `<option value="${i}"${i===wzCol?' selected':''}>${d}</option>`;
+  });
+  html += '</select></div>';
+
+  html += `<div class="wz-progress">${done ? '全項目 入力完了' : `質問 ${wzStep+1} / ${total}`}</div>`;
+  html += `<div class="wz-bar"><div style="width:${pct}%"></div></div>`;
+
+  if(!done){
+    const cur = entriesData[`${wzStep}_${wzCol}`];
+    const mk = (v, label, sub) =>
+      `<button type="button" class="${cur===v?'sel':''}" data-v="${v}">${label}<small>${sub}</small></button>`;
+    html += `<div class="wz-card">
+      <div class="wz-no">№${wzStep+1}</div>
+      <div class="wz-item">${items[wzStep][0]}</div>
+      <div class="wz-focus">${items[wzStep][1]}</div>
+    </div>`;
+    html += '<div class="wz-choices">'
+      + mk('○','○','良好')
+      + mk('×','×','調整又は要修理')
+      + mk('A','A','調整又は補修')
+      + mk('－','－','該当無し')
+      + '</div>';
+    html += `<div class="wz-nav">
+      <button type="button" id="wzPrev"${wzStep===0?' disabled':''}>← 前へ</button>
+      <button type="button" id="wzNext">次へ →</button>
+    </div>`;
+    html += '<div class="wz-bulk"><button type="button" id="wzAllOk">この日の全項目を「○」にする</button></div>';
+  } else {
+    html += '<div class="wz-done">✔ すべての項目の入力が完了しました</div>';
+    html += `<div class="wz-nav">
+      <button type="button" id="wzPrev">← 戻る</button>
+      <button type="button" id="wzRestart">最初からやり直す</button>
+    </div>`;
+  }
+
+  const cKey = `confirm_${wzCol}`;
+  html += `<div class="wz-confirm">施工担当者 確認：<input id="wzConfirm" value="${(entriesData[cKey]||'').replace(/"/g,'&quot;')}"></div>`;
+
+  box.innerHTML = html;
+
+  box.querySelector('#wzDate').onchange = function(){
+    wzCol = +this.value;
+    wzStep = 0;
+    renderWizard();
+  };
+  box.querySelectorAll('.wz-choices button').forEach(b => {
+    b.onclick = () => {
+      entriesData[`${wzStep}_${wzCol}`] = b.dataset.v;
+      wzStep++;
+      draw();
+      saveData();
+    };
+  });
+  const prev = box.querySelector('#wzPrev');
+  if(prev) prev.onclick = () => { if(wzStep>0){ wzStep--; renderWizard(); } };
+  const next = box.querySelector('#wzNext');
+  if(next) next.onclick = () => { wzStep++; renderWizard(); };
+  const allOk = box.querySelector('#wzAllOk');
+  if(allOk) allOk.onclick = () => {
+    for(let r=0; r<items.length; r++) entriesData[`${r}_${wzCol}`] = '○';
+    wzStep = items.length;
+    draw();
+    saveData();
+  };
+  const restart = box.querySelector('#wzRestart');
+  if(restart) restart.onclick = () => { wzStep = 0; renderWizard(); };
+  box.querySelector('#wzConfirm').oninput = function(){
+    entriesData[cKey] = this.value;
+    const inputs = document.querySelectorAll('#confirmRow input.confirm-in');
+    if(inputs[wzCol]) inputs[wzCol].value = this.value;
+    saveData();
+  };
+}
+
 async function exportPdf(){
   const btn = document.getElementById('print');
   const originalText = btn.textContent;
 
-  // スマホのポップアップブロック対策：クリック直後にタブを開いておく
   const win = window.open('', '_blank');
   if(win){
     win.document.write('<p style="font-family:sans-serif;padding:20px;">PDFを生成しています...</p>');
@@ -434,19 +543,17 @@ async function exportPdf(){
     minWidth: target.style.minWidth,
     boxShadow: target.style.boxShadow
   };
-  const replaced = []; // 一時的に置き換えた select を記録して後で元に戻す
+  const replaced = [];
 
   try {
     if(typeof html2canvas === 'undefined' || !window.jspdf){
       throw new Error('PDFライブラリの読み込みに失敗しました。通信環境を確認してください。');
     }
 
-    // 画面幅に関係なく、A4横の見た目で出力するため幅を固定する
     target.style.width = '285mm';
     target.style.minWidth = '285mm';
     target.style.boxShadow = 'none';
 
-    // select をテキスト表示に置き換える（〇のみフォントサイズを小さくする）
     target.querySelectorAll('select.cell-sel').forEach(sel => {
       const span = document.createElement('div');
       span.className = 'pdf-sym' + (sel.value === '○' ? ' is-circle' : '');
@@ -454,6 +561,16 @@ async function exportPdf(){
       sel.style.display = 'none';
       sel.parentNode.insertBefore(span, sel);
       replaced.push({ sel, span });
+    });
+
+    // 日付欄：inputのままだと html2canvas が長い文字を切るため、テキスト表示に置き換える
+    target.querySelectorAll('#dateRow input.cell-in').forEach(inp => {
+      const span = document.createElement('div');
+      span.className = 'pdf-date';
+      span.textContent = inp.value;
+      inp.style.display = 'none';
+      inp.parentNode.insertBefore(span, inp);
+      replaced.push({ sel: inp, span });
     });
 
     const canvas = await html2canvas(target, {
@@ -465,10 +582,9 @@ async function exportPdf(){
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();   // 297
-    const pageH = pdf.internal.pageSize.getHeight();  // 210
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
 
-    // A4に収まるよう縦横比を保って縮小・中央寄せ
     const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
     const imgW = canvas.width * ratio;
     const imgH = canvas.height * ratio;
@@ -481,16 +597,15 @@ async function exportPdf(){
     const url = URL.createObjectURL(blob);
 
     if(win){
-      win.location.href = url;   // 新しいタブでPDFを表示
+      win.location.href = url;
     } else {
-      window.location.href = url; // タブを開けない場合は同じタブで表示
+      window.location.href = url;
     }
   } catch(err) {
     console.error(err);
     if(win) win.close();
     alert('PDF出力に失敗しました：' + err.message);
   } finally {
-    // 画面を元の状態に戻す
     replaced.forEach(({ sel, span }) => {
       span.remove();
       sel.style.display = '';
@@ -503,14 +618,11 @@ async function exportPdf(){
   }
 }
 
-/* ===== 起動処理 ===== */
 document.addEventListener('DOMContentLoaded', async () => {
   initControls();
 
-  // 先に保存済みデータを読み込む
   await loadData();
 
-  // 日付の追加
   document.getElementById('addDate').addEventListener('click', () => {
     if(dates.length >= MAX_COLUMNS){
       alert('これ以上日付を追加できません（最大16列までです）。');
@@ -519,12 +631,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const m = document.getElementById('newMonth').value;
     const d = document.getElementById('newDay').value;
     const value = `${m}/${d}`;
-    
+
     if(dates.includes(value)){
       alert('同じ日付はすでに登録されています。');
       return;
     }
-    
+
     const newColIdx = dates.length;
     for(let r=0; r<items.length; r++){
       entriesData[`${r}_${newColIdx}`] = '－';
@@ -532,15 +644,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     entriesData[`confirm_${newColIdx}`] = CONFIRM_DEFAULT;
 
     dates.push(value);
+    wzCol = newColIdx;
+    wzStep = 0;
     draw();
     saveData();
   });
 
-  // 日付の削除
   document.getElementById('removeDateButton').addEventListener('click', () => {
     const index = +document.getElementById('removeDate').value;
     if(Number.isNaN(index) || index < 0 || index >= dates.length) return;
-    
+
     for(let col=index; col<MAX_COLUMNS-1; col++){
       for(let r=0; r<items.length; r++){
         entriesData[`${r}_${col}`] = entriesData[`${r}_${col+1}`];
@@ -553,18 +666,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     delete entriesData[`confirm_${MAX_COLUMNS-1}`];
 
     dates.splice(index, 1);
+    wzCol = Math.max(0, Math.min(wzCol, dates.length - 1));
+    wzStep = 0;
     draw();
     saveData();
   });
 
-  // 点検者名など下部欄の変更も保存
   document.querySelectorAll('table.info-tbl input.cell-in').forEach(i => {
     i.addEventListener('input', saveData);
   });
 
-  // PDF出力
   document.getElementById('print').addEventListener('click', exportPdf);
 
+  wzCol = Math.max(0, dates.length - 1);
+  wzStep = 0;
   draw();
 });
 </script>
