@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>バックホウ日々点検表</title>
+<style>
+  :root { --line:#000; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { padding:12px; background:#eef1f4; color:#000; font-family:"Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif; }
+  
+  /* 操作エリア */
+  .controls { max-width:1120px; margin:0 auto 12px; padding:12px 16px; background:#fff; border:1px solid #c8cdd2; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
+  .controls p { width:100%; margin:0 0 3px; font-size:13px; line-height:1.45; }
+  label { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:bold; }
+  input, select, button { font:inherit; color:#000; }
+  select { border:1px solid #777; border-radius:2px; padding:4px 6px; background:#fff; font-size:13px; }
+  button { border:1px solid #555; border-radius:3px; background:#fff; padding:6px 14px; cursor:pointer; font-size:13px; font-weight:bold; }
+  button:hover { background:#e2e2e2; }
+  .btn-print { background:#1976d2 !important; color:#fff !important; border-color:#1565c0 !important; }
+  
+  /* 用紙（A4横レイアウト） */
+  .page { width:285mm; min-height:198mm; margin:0 auto; padding:8mm 10mm; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.15); position:relative; }
+  
+  /* ヘッダー */
+  .top-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+  .top-header h1 { font-size:22px; font-weight:bold; letter-spacing:0.4em; margin:0; text-align:center; flex:1; margin-left:80px; }
+  .form-code { font-family:Arial, sans-serif; font-size:9px; text-align:right; line-height:1.2; width:120px; }
+
+  .legend-bar { font-size:10.5px; margin-bottom:4px; white-space:nowrap; }
+
+  /* 点検メインテーブル */
+  table.check-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
+  table.check-tbl th, table.check-tbl td { border:1px solid var(--line); padding:0; text-align:center; font-size:10px; vertical-align:middle; height:20px; background:#fff; overflow:hidden; }
+
+  .focus-cell { text-align:left !important; padding-left:4px !important; font-size:9.5px; }
+  .item-cell { font-size:10px; }
+
+  /* 入力・ドロップダウン（描画ずれ・文字隠れをCSSで完全解消） */
+  input.cell-in { width:100%; height:100%; border:0; background:transparent; text-align:center; font-size:10px; font-weight:bold; outline:none; }
+  
+  select.cell-sel {
+    width:100%; height:100%; border:0; background:transparent;
+    text-align:center; text-align-last:center; font-size:11px; font-weight:bold;
+    outline:none; cursor:pointer; font-family:inherit;
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
+  }
+  select.cell-sel::-ms-expand { display:none; }
+
+  /* 下部レイアウト */
+  .bottom-area { display:flex; gap:12px; margin-top:8px; align-items:flex-start; }
+  .bottom-left { flex:1.15; }
+  .sub-title { font-size:16px; font-weight:bold; margin:0 0 6px; border-bottom:2.5px solid #000; padding-bottom:1px; }
+  
+  .notes-block { font-size:9.5px; line-height:1.35; }
+  .notes-block p { font-weight:bold; margin:2px 0 1px; }
+  .notes-block ol { margin:0; padding-left:1.4em; }
+
+  .slogan { margin-top:10px; font-size:10px; font-weight:bold; text-align:center; }
+
+  /* 右下整理表 */
+  .bottom-right { flex:1; }
+  table.info-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
+  table.info-tbl th, table.info-tbl td { border:1px solid var(--line); padding:2px 3px; font-size:10px; text-align:center; height:26px; }
+  table.info-tbl th { font-weight:normal; background:#fff; }
+
+  /* iPhone SE対応 */
+  @media screen and (max-width:480px) {
+    body { padding:0; background:#fff; }
+    .controls { margin:0; padding:10px; border-radius:0; border-width:0 0 1px; gap:8px; }
+    .controls label { flex:1 1 45%; }
+    .controls select { width:100%; height:36px; }
+    .controls button { flex:1 1 100%; height:38px; }
+    .page { width:100%; min-height:auto; padding:6px; box-shadow:none; overflow-x:auto; }
+    .top-header, table.check-tbl, .bottom-area { min-width:760px; }
+  }
+
+  /* 印刷・PDF用設定 */
+  @media print {
+    @page { size:A4 landscape; margin:0; }
+    body { padding:0; background:#fff; }
+    .controls { display:none !important; }
+    .page { width:297mm; height:210mm; margin:0; padding:8mm 10mm; box-shadow:none; page-break-after:always; }
+    select.cell-sel { border:none; background:transparent; appearance:none; -webkit-appearance:none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="controls">
+  <p>【操作】日付を追加すると1列目から順に「－」記号が入ります。必要に応じて「○」「×」「A」に変更してください。</p>
+  <label>月: <select id="newMonth"></select></label>
+  <label>日: <select id="newDay"></select></label>
+  <button type="button" id="addDate">日付を追加</button>
+  <label style="margin-left:10px;">登録日: <select id="removeDate"></select></label>
+  <button type="button" id="removeDateButton">選択した日付を削除</button>
+  <button type="button" class="btn-print" id="print" style="margin-left:auto;">PDFとして保存・印刷</button>
+</section>
+
+<main class="page" id="exportArea">
+  <!-- ヘッダー -->
+  <header class="top-header">
+    <h1>機　械　点　検　表</h1>
+    <div class="form-code">
+      QMS 工事 8.5-02<br>
+      SMS-4.11-T-08-B2
+    </div>
+  </header>
+
+  <div class="legend-bar">
+    使用前の点検結果は次の記号で書き入れる。　　良好…○　  調整又は要修理…×　　調整又は補修…A　　該当無し…－
+  </div>
+
+  <!-- 点検メインテーブル -->
+  <table class="check-tbl">
+    <colgroup>
+      <col style="width:3.5%;">
+      <col style="width:17.5%;">
+      <col style="width:33%;">
+      <!-- 16列固定 (2.875% * 16 = 46%) -->
+      <col style="width:2.875%;" span="16">
+    </colgroup>
+    <thead>
+      <tr>
+        <th rowspan="2">№</th>
+        <th rowspan="2">点　検　事　項</th>
+        <th rowspan="2">主　　眼　　点</th>
+        <th colspan="16">月／日</th>
+      </tr>
+      <tr id="dateRow"></tr>
+    </thead>
+    <tbody id="checkBody"></tbody>
+    <tfoot>
+      <tr id="confirmRow" style="height:26px;"></tr>
+    </tfoot>
+  </table>
+
+  <!-- 下部エリア -->
+  <div class="bottom-area">
+    <!-- 左側: 注意事項・作業手順・標語 -->
+    <div class="bottom-left">
+      <div class="sub-title">B2 バックホウ日々点検表</div>
+      <div class="notes-block">
+        <p>取り扱い注意事項</p>
+        <ol>
+          <li>運転操作は取り扱い責任者（有資格者）が行う。</li>
+          <li>運転者以外の者を同乗させない。誘導・合図は確認して、それに従う。</li>
+          <li>運転中は前後の安全を確認する。</li>
+          <li>誘導・合図は確認して、それに従う。</li>
+          <li>運転席を離れる場合は駐車ブレーキをかけキーを抜き取る。</li>
+          <li>×及びAは施工担当者に報告する。</li>
+        </ol>
+        <p style="margin-top:4px;">作業手順</p>
+        <ol>
+          <li>作業前に作業手順の再確認を行う。</li>
+          <li>品質に影響する作業には特に留意して行う。</li>
+        </ol>
+      </div>
+      <div class="slogan">機械は点検、作業は手順、あわせて築く無災害＜東亜道路工業＞</div>
+    </div>
+
+    <!-- 右側: 属性表 -->
+    <div class="bottom-right">
+      <table class="info-tbl">
+        <tr>
+          <th style="width:20%;">点検者名</th>
+          <td style="width:30%;"><input class="cell-in" value="玉置　大志" aria-label="点検者名"></td>
+          <th style="width:18%;">型式能力</th>
+          <td style="width:32%;"><input class="cell-in" value="0.1m3" aria-label="型式能力"></td>
+        </tr>
+        <tr>
+          <th>所有業者</th>
+          <td><input class="cell-in" value="東亜道路工業" aria-label="所有業者"></td>
+          <th>持込機械<br>許可番号</th>
+          <td><input class="cell-in" value="BH1" aria-label="持込機械許可番号"></td>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+          <th>管理番号</th>
+          <td><input class="cell-in" value="" aria-label="管理番号"></td>
+        </tr>
+        <tr>
+          <th colspan="4" style="height:20px;">資　格　者　証　等</th>
+        </tr>
+        <tr>
+          <td colspan="4" style="height:42px;"><input class="cell-in" value="車両系建設機械技能講習" style="font-size:11.5px;" aria-label="資格者証等"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const items = [
+ ['油量点検・補給','E／Gｵｲﾙﾊﾟﾝ・作動油ﾀﾝｸ・ﾊﾞｯﾃﾘｰ液'],
+ ['冷却水・各ﾍﾞﾙﾄの張り','冷却水量・汚れ・ｴﾝｼﾞﾝＶﾍﾞﾙﾄ等'],
+ ['燃料関係','燃料量の点検・燃料ﾀﾝｸﾄﾞﾚｰﾝ'],
+ ['給脂･摩耗･損傷','作業装置･旋回装置等･ﾊﾞｹｯﾄ･ﾂｰｽ'],
+ ['吸気･排気','ｴﾚｸﾄﾘｶﾙ目詰まり点検・ｴﾝｼﾞﾝ音・排気色'],
+ ['動力伝達装置','ﾎﾟﾝﾌﾟ･ﾓｰﾀ･ﾐｯｼｮﾝ･ﾃﾞﾌｹｰｽ･油量･汚れ･漏れ'],
+ ['油圧ｼﾘﾝﾀﾞ･ﾎｰｽ･継手','作動は良いか･油漏れはないか'],
+ ['ｴﾚｸﾄﾘｶﾙ・計器類','ｹﾞｰｼﾞ類の点検・ﾎｰﾝ・ﾗｲﾄ・ｳｲﾝｶｰ'],
+ ['ｽﾃｱﾘﾝｸﾞ装置','ｽﾃｱﾘﾝｸﾞ及び各操作ﾚﾊﾞｰの作動状態'],
+ ['制動装置･ﾀｲﾔ','作動状態･油量･汚れ･漏れ･空気圧･摩耗･損傷'],
+ ['履帯関係','張り･ｼｭｰﾎﾞﾙﾄ･ﾅｯﾄ等の状態']
+];
+
+const MAX_COLUMNS = 16;
+let dates = [];
+let entriesData = {};
+
+function initControls(){
+  const month = document.getElementById('newMonth');
+  const day = document.getElementById('newDay');
+  if(month && !month.options.length){
+    for(let i=1; i<=12; i++) month.add(new Option(i+'月', i));
+  }
+  if(day && !day.options.length){
+    for(let i=1; i<=31; i++) day.add(new Option(i+'日', i));
+  }
+}
+
+function setRemoveControls(){
+  const remove = document.getElementById('removeDate');
+  if(!remove) return;
+  remove.innerHTML = '';
+  dates.forEach((date, index) => {
+    remove.add(new Option(date, index));
+  });
+  const btn = document.getElementById('removeDateButton');
+  if(btn) btn.disabled = dates.length === 0;
+}
+
+function draw(){
+  const header = document.getElementById('dateRow');
+  const body = document.getElementById('checkBody');
+  const confirmRow = document.getElementById('confirmRow');
+
+  if(!header || !body || !confirmRow) return;
+
+  // 1. ヘッダー（日付）
+  header.innerHTML = '';
+  for(let col=0; col<MAX_COLUMNS; col++){
+    const th = document.createElement('th');
+    const val = dates[col] || '';
+    const input = document.createElement('input');
+    input.className = 'cell-in';
+    input.value = val;
+    input.oninput = function(){
+      dates[col] = this.value.trim();
+      setRemoveControls();
+    };
+    th.appendChild(input);
+    header.appendChild(th);
+  }
+
+  // 2. 点検項目（記号）
+  body.innerHTML = '';
+  items.forEach((item, row) => {
+    const tr = document.createElement('tr');
+    
+    tr.innerHTML = `<td class="num">${row+1}</td><td class="item-cell">${item[0]}</td><td class="focus-cell">${item[1]}</td>`;
+
+    for(let col=0; col<MAX_COLUMNS; col++){
+      const td = document.createElement('td');
+      const key = `${row}_${col}`;
+      let val = entriesData[key];
+      
+      if(val === undefined){
+        val = (col < dates.length) ? '－' : '';
+        entriesData[key] = val;
+      }
+
+      const select = document.createElement('select');
+      select.className = 'cell-sel';
+      select.onchange = function(){
+        entriesData[key] = this.value;
+      };
+
+      ['', '○', '×', 'A', '－'].forEach(optVal => {
+        const opt = document.createElement('option');
+        opt.value = optVal;
+        opt.textContent = optVal;
+        if(optVal === val) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      td.appendChild(select);
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  });
+
+  // 3. 施工担当者確認印
+  confirmRow.innerHTML = '<td colspan="3" style="font-weight:bold; font-size:10.5px;">施工担当者　確認</td>';
+  for(let col=0; col<MAX_COLUMNS; col++){
+    const td = document.createElement('td');
+    const key = `confirm_${col}`;
+    let val = entriesData[key];
+    if(val === undefined){
+      val = (col < dates.length) ? '－' : '';
+      entriesData[key] = val;
+    }
+
+    const input = document.createElement('input');
+    input.className = 'cell-in';
+    input.value = val;
+    input.oninput = function(){
+      entriesData[key] = this.value;
+    };
+
+    td.appendChild(input);
+    confirmRow.appendChild(td);
+  }
+
+  setRemoveControls();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initControls();
+
+  // 日付の追加
+  document.getElementById('addDate').addEventListener('click', () => {
+    if(dates.length >= MAX_COLUMNS){
+      alert('これ以上日付を追加できません（最大16列までです）。');
+      return;
+    }
+    const m = document.getElementById('newMonth').value;
+    const d = document.getElementById('newDay').value;
+    const value = `${m}/${d}`;
+    
+    if(dates.includes(value)){
+      alert('同じ日付はすでに登録されています。');
+      return;
+    }
+    
+    const newColIdx = dates.length;
+    for(let r=0; r<items.length; r++){
+      entriesData[`${r}_${newColIdx}`] = '－';
+    }
+    entriesData[`confirm_${newColIdx}`] = '－';
+
+    dates.push(value);
+    draw();
+  });
+
+  // 日付の削除
+  document.getElementById('removeDateButton').addEventListener('click', () => {
+    const index = +document.getElementById('removeDate').value;
+    if(Number.isNaN(index) || index < 0 || index >= dates.length) return;
+    
+    for(let col=index; col<MAX_COLUMNS-1; col++){
+      for(let r=0; r<items.length; r++){
+        entriesData[`${r}_${col}`] = entriesData[`${r}_${col+1}`];
+      }
+      entriesData[`confirm_${col}`] = entriesData[`confirm_${col+1}`];
+    }
+    for(let r=0; r<items.length; r++){
+      delete entriesData[`${r}_${MAX_COLUMNS-1}`];
+    }
+    delete entriesData[`confirm_${MAX_COLUMNS-1}`];
+
+    dates.splice(index, 1);
+    draw();
+  });
+
+  // PDF保存・印刷
+  document.getElementById('print').addEventListener('click', () => {
+    window.print();
+  });
+
+  draw();
+});
+</script>
+</body>
+</html>
