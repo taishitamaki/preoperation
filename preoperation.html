@@ -57,6 +57,14 @@
   }
   select.cell-sel::-ms-expand { display:none; }
 
+  /* PDF出力時に select の代わりに表示するテキスト */
+  .pdf-sym {
+    display:flex; align-items:center; justify-content:center;
+    width:100%; height:20px; font-size:11px; font-weight:bold; line-height:1;
+    font-family:"Hiragino Kaku Gothic ProN","Meiryo",Arial,sans-serif;
+  }
+  .pdf-sym.is-circle { font-size:8px; } /* 〇のみ小さく */
+
   /* 下部レイアウト */
   .bottom-area { display:flex; gap:12px; margin-top:8px; align-items:flex-start; }
   .bottom-left { flex:1.15; }
@@ -420,22 +428,33 @@ async function exportPdf(){
   btn.disabled = true;
   btn.textContent = 'PDF生成中...';
 
+  const target = document.getElementById('exportArea');
+  const prevStyle = {
+    width: target.style.width,
+    minWidth: target.style.minWidth,
+    boxShadow: target.style.boxShadow
+  };
+  const replaced = []; // 一時的に置き換えた select を記録して後で元に戻す
+
   try {
     if(typeof html2canvas === 'undefined' || !window.jspdf){
       throw new Error('PDFライブラリの読み込みに失敗しました。通信環境を確認してください。');
     }
 
-    const target = document.getElementById('exportArea');
-    const prevStyle = {
-      width: target.style.width,
-      minWidth: target.style.minWidth,
-      boxShadow: target.style.boxShadow
-    };
-
     // 画面幅に関係なく、A4横の見た目で出力するため幅を固定する
     target.style.width = '285mm';
     target.style.minWidth = '285mm';
     target.style.boxShadow = 'none';
+
+    // select をテキスト表示に置き換える（〇のみフォントサイズを小さくする）
+    target.querySelectorAll('select.cell-sel').forEach(sel => {
+      const span = document.createElement('div');
+      span.className = 'pdf-sym' + (sel.value === '○' ? ' is-circle' : '');
+      span.textContent = sel.value;
+      sel.style.display = 'none';
+      sel.parentNode.insertBefore(span, sel);
+      replaced.push({ sel, span });
+    });
 
     const canvas = await html2canvas(target, {
       scale: 2,
@@ -443,10 +462,6 @@ async function exportPdf(){
       useCORS: true,
       windowWidth: target.scrollWidth
     });
-
-    target.style.width = prevStyle.width;
-    target.style.minWidth = prevStyle.minWidth;
-    target.style.boxShadow = prevStyle.boxShadow;
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -475,6 +490,14 @@ async function exportPdf(){
     if(win) win.close();
     alert('PDF出力に失敗しました：' + err.message);
   } finally {
+    // 画面を元の状態に戻す
+    replaced.forEach(({ sel, span }) => {
+      span.remove();
+      sel.style.display = '';
+    });
+    target.style.width = prevStyle.width;
+    target.style.minWidth = prevStyle.minWidth;
+    target.style.boxShadow = prevStyle.boxShadow;
     btn.disabled = false;
     btn.textContent = originalText;
   }
