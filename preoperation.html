@@ -437,7 +437,6 @@ async function exportPdf(){
     target.style.minWidth = '285mm';
     target.style.boxShadow = 'none';
 
-    // selectの▼などが写り込まないよう、入力値をそのまま描画
     const canvas = await html2canvas(target, {
       scale: 2,
       backgroundColor: '#ffffff',
