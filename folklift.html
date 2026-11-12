@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>フォークリフト日々点検表</title>
+<style>
+  :root { --line:#000; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { padding:12px; background:#eef1f4; color:#000; font-family:"Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif; }
+
+  .controls { max-width:1120px; margin:0 auto 12px; padding:12px 16px; background:#fff; border:1px solid #c8cdd2; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
+  .controls p { width:100%; margin:0 0 3px; font-size:13px; line-height:1.45; }
+  label { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:bold; }
+  input, select, button { font:inherit; color:#000; }
+  select { border:1px solid #777; border-radius:2px; padding:4px 6px; background:#fff; font-size:13px; }
+  button { border:1px solid #555; border-radius:3px; background:#fff; padding:6px 14px; cursor:pointer; font-size:13px; font-weight:bold; }
+  button:hover { background:#e2e2e2; }
+  button:disabled { opacity:0.6; cursor:default; }
+  .btn-print { background:#1976d2 !important; color:#fff !important; border-color:#1565c0 !important; }
+
+  #saveStatus { font-size:12px; font-weight:bold; color:#666; }
+  #saveStatus.saving { color:#e65100; }
+  #saveStatus.saved { color:#2e7d32; }
+  #saveStatus.error { color:#c62828; }
+
+  .wizard { max-width:1120px; margin:0 auto 12px; background:#fff; border:1px solid #c8cdd2; padding:14px 16px; }
+  .wizard h2 { font-size:15px; margin-bottom:8px; }
+  .wz-empty { font-size:13px; color:#666; padding:8px 0; }
+  .wz-daybar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .wz-daybar select { flex:1; height:40px; font-size:15px; }
+  .wz-progress { font-size:12px; font-weight:bold; color:#555; margin-bottom:4px; }
+  .wz-bar { height:6px; background:#e0e4e8; border-radius:3px; overflow:hidden; margin-bottom:12px; }
+  .wz-bar > div { height:100%; background:#1976d2; width:0; transition:width .2s; }
+  .wz-card { border:2px solid #1976d2; border-radius:8px; padding:14px 12px; margin-bottom:12px; background:#f7fbff; }
+  .wz-card .wz-no { font-size:12px; font-weight:bold; color:#1976d2; }
+  .wz-card .wz-item { font-size:20px; font-weight:bold; margin:4px 0; line-height:1.3; }
+  .wz-card .wz-focus { font-size:14px; color:#333; line-height:1.4; }
+  .wz-choices { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .wz-choices button { height:64px; font-size:17px; border-width:2px; border-radius:8px; line-height:1.2; }
+  .wz-choices button small { display:block; font-size:11px; font-weight:normal; }
+  .wz-choices button.sel { background:#1976d2; color:#fff; border-color:#1565c0; }
+  .wz-nav { display:flex; gap:10px; }
+  .wz-nav button { flex:1; height:46px; font-size:15px; }
+  .wz-confirm { margin-top:10px; display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; }
+  .wz-confirm input { border:1px solid #777; border-radius:2px; padding:6px; width:80px; color:#e60000; font-weight:bold; text-align:center; font-size:15px; }
+  .wz-bulk { margin-top:10px; }
+  .wz-bulk button { width:100%; height:40px; font-size:13px; }
+  .wz-done { text-align:center; padding:10px 0; font-size:15px; font-weight:bold; color:#2e7d32; }
+
+  .preview-title { max-width:1120px; margin:0 auto 6px; font-size:14px; font-weight:bold; }
+
+  .page { width:285mm; min-height:198mm; margin:0 auto; padding:8mm 10mm; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.15); position:relative; }
+
+  .top-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+  .top-header h1 { font-size:22px; font-weight:bold; letter-spacing:0.4em; margin:0; text-align:center; flex:1; margin-left:80px; }
+  .form-code { font-family:Arial, sans-serif; font-size:9px; text-align:right; line-height:1.2; width:120px; }
+
+  .legend-bar { font-size:10.5px; margin-bottom:4px; white-space:nowrap; }
+
+  table.check-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
+  table.check-tbl th, table.check-tbl td { border:1px solid var(--line); padding:0; text-align:center; font-size:10px; vertical-align:middle; height:20px; background:#fff; overflow:hidden; }
+
+  .focus-cell { text-align:left !important; padding-left:4px !important; font-size:9.5px; }
+  .item-cell { font-size:10px; }
+
+  input.cell-in { width:100%; height:100%; border:0; background:transparent; text-align:center; font-size:10px; font-weight:bold; outline:none; }
+  table.check-tbl thead input.cell-in { font-size:8.5px; padding:0; letter-spacing:-0.5px; }
+
+  input.confirm-in { color:#e60000; }
+
+  select.cell-sel {
+    width:100%; height:100%; border:0; background:transparent;
+    text-align:center; text-align-last:center; font-size:11px; font-weight:bold;
+    outline:none; cursor:pointer; font-family:inherit;
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
+  }
+  select.cell-sel::-ms-expand { display:none; }
+
+  .pdf-sym {
+    display:flex; align-items:center; justify-content:center;
+    width:100%; height:20px; font-size:11px; font-weight:bold; line-height:1;
+    font-family:"Hiragino Kaku Gothic ProN","Meiryo",Arial,sans-serif;
+  }
+  .pdf-sym.is-circle { font-size:8px; }
+
+  .pdf-date {
+    display:flex; align-items:center; justify-content:center;
+    width:100%; height:20px; font-size:8px; font-weight:bold; line-height:1;
+    letter-spacing:-0.6px; white-space:nowrap; overflow:visible;
+    font-family:"Hiragino Kaku Gothic ProN","Meiryo",Arial,sans-serif;
+  }
+
+  .bottom-area { display:flex; gap:12px; margin-top:8px; align-items:flex-start; }
+  .bottom-left { flex:1.15; }
+  .sub-title { font-size:16px; font-weight:bold; margin:0 0 6px; border-bottom:2.5px solid #000; padding-bottom:1px; }
+
+  .notes-block { font-size:9.5px; line-height:1.35; }
+  .notes-block p { font-weight:bold; margin:2px 0 1px; }
+  .notes-block ol { margin:0; padding-left:1.4em; }
+
+  .slogan { margin-top:10px; font-size:10px; font-weight:bold; text-align:center; }
+
+  .bottom-right { flex:1; }
+  table.info-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
+  table.info-tbl th, table.info-tbl td { border:1px solid var(--line); padding:2px 3px; font-size:10px; text-align:center; height:26px; }
+  table.info-tbl th { font-weight:normal; background:#fff; }
+
+  /* 資格者証の写真 */
+  .id-photo-wrap { margin-top:4px; text-align:center; }
+  .id-photo-wrap img { display:block; margin:0 auto; max-width:100%; max-height:46mm; width:auto; height:auto; object-fit:contain; }
+
+  @media screen and (max-width:480px) {
+    body { padding:0; background:#fff; }
+    .controls { margin:0; padding:10px; border-radius:0; border-width:0 0 1px; gap:8px; }
+    .controls label { flex:1 1 45%; }
+    .controls select { width:100%; height:36px; }
+    .controls button { flex:1 1 100%; height:38px; }
+    .wizard { margin:0; border-width:0 0 1px; }
+    .preview-title { padding:6px 10px 0; }
+    .page { width:100%; min-height:auto; padding:6px; box-shadow:none; overflow-x:auto; }
+    .top-header, table.check-tbl, .bottom-area { min-width:760px; }
+  }
+
+  @media print {
+    @page { size:A4 landscape; margin:0; }
+    body { padding:0; background:#fff; }
+    .controls, .wizard, .preview-title { display:none !important; }
+    .page { width:297mm; height:210mm; margin:0; padding:8mm 10mm; box-shadow:none; page-break-after:always; }
+    select.cell-sel { border:none; background:transparent; appearance:none; -webkit-appearance:none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="controls">
+  <p>【操作】日付を追加すると1列目から順に「－」記号が入ります。下の「一問一答入力」で項目ごとに○・×・A・－を選んでください。入力内容は自動的にスプレッドシートへ保存されます。</p>
+  <label>月: <select id="newMonth"></select></label>
+  <label>日: <select id="newDay"></select></label>
+  <button type="button" id="addDate">日付を追加</button>
+  <label style="margin-left:10px;">登録日: <select id="removeDate"></select></label>
+  <button type="button" id="removeDateButton">選択した日付を削除</button>
+  <span id="saveStatus">読み込み中...</span>
+  <button type="button" class="btn-print" id="print" style="margin-left:auto;">PDF出力</button>
+</section>
+
+<section class="wizard" id="wizard">
+  <h2>一問一答入力</h2>
+  <div id="wizardBody"></div>
+</section>
+
+<div class="preview-title">▼ プレビュー（入力内容の確認）</div>
+
+<main class="page" id="exportArea">
+  <header class="top-header">
+    <h1>機　械　点　検　表</h1>
+    <div class="form-code">
+      QMS 工事 8.5-02<br>
+      SMS-4.11-T-08-F1
+    </div>
+  </header>
+
+  <div class="legend-bar">
+    使用前の点検結果は次の記号で書き入れる。　　良好…○　  調整又は要修理…×　　調整又は補修…A　　該当無し…－
+  </div>
+
+  <table class="check-tbl">
+    <colgroup>
+      <col style="width:3.5%;">
+      <col style="width:17.5%;">
+      <col style="width:33%;">
+      <col style="width:2.875%;" span="16">
+    </colgroup>
+    <thead>
+      <tr>
+        <th rowspan="2">№</th>
+        <th rowspan="2">点　検　事　項</th>
+        <th rowspan="2">主　　眼　　点</th>
+        <th colspan="16">月／日</th>
+      </tr>
+      <tr id="dateRow"></tr>
+    </thead>
+    <tbody id="checkBody"></tbody>
+    <tfoot>
+      <tr id="confirmRow" style="height:26px;"></tr>
+    </tfoot>
+  </table>
+
+  <div class="bottom-area">
+    <div class="bottom-left">
+      <div class="sub-title">F1 フォークリフト日々点検表</div>
+      <div class="notes-block">
+        <p>取り扱い注意事項</p>
+        <ol>
+          <li>運転操作は取り扱い責任者（有資格者）が行う。</li>
+          <li>運転者以外の者を同乗させない。フォークの上に人を乗せない。</li>
+          <li>走行時は荷を地上20〜30cmに下げ、マストを後傾させる。</li>
+          <li>前後左右の安全を確認し、制限速度を遵守する。</li>
+          <li>運転席を離れる場合はフォークを接地させ、駐車ブレーキをかけキーを抜き取る。</li>
+          <li>×及びAは施工担当者に報告する。</li>
+        </ol>
+        <p style="margin-top:4px;">作業手順</p>
+        <ol>
+          <li>作業前に作業手順の再確認を行う。</li>
+          <li>許容荷重および偏荷重に留意し安全な荷役作業を行う。</li>
+        </ol>
+      </div>
+      <div class="slogan">機械は点検、作業は手順、あわせて築く無災害＜東亜道路工業＞</div>
+    </div>
+
+    <div class="bottom-right">
+      <table class="info-tbl">
+        <tr>
+          <th style="width:20%;">点検者名</th>
+          <td style="width:30%;"><input class="cell-in" value="小林　茂雄" aria-label="点検者名"></td>
+          <th style="width:18%;">型式能力</th>
+          <td style="width:32%;"><input class="cell-in" value="2.5t" aria-label="型式能力"></td>
+        </tr>
+        <tr>
+          <th>所有業者</th>
+          <td><input class="cell-in" value="東亜道路工業" aria-label="所有業者"></td>
+          <th>持込機械<br>許可番号</th>
+          <td><input class="cell-in" value="FL1" aria-label="持込機械許可番号"></td>
+        </tr>
+        <tr>
+          <td colspan="2"></td>
+          <th>管理番号</th>
+          <td><input class="cell-in" value="北町FL" aria-label="管理番号"></td>
+        </tr>
+        <tr>
+          <th colspan="4" style="height:20px;">資　格　者　証　等</th>
+        </tr>
+        <tr>
+          <td colspan="4" style="height:42px;"><input class="cell-in" value="フォークリフト運転技能講習" style="font-size:11.5px;" aria-label="資格者証等"></td>
+        </tr>
+      </table>
+      <div class="id-photo-wrap">
+        <img id="idPhoto" src="id.jpg" alt="資格者証" crossorigin="anonymous">
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbykf41L6fFpLUiz3Tg8CvFn9yt1I0MYMXJ70bbPe547JD8jkMZcAdshufdT6C14Tazc/exec';
+
+const items = [
+ ['油量点検・補給','E／Gｵｲﾙﾊﾟﾝ・作動油ﾀﾝｸ・ﾊﾞｯﾃﾘｰ液（冷却水）'],
+ ['燃料関係・充電','燃料量の点検・漏れ・ﾊﾞｯﾃﾘｰ液量・充電状態'],
+ ['給脂・潤滑状態','ﾏｽﾄ各部・ﾁｪｰﾝ・各摺動部の給脂状態'],
+ ['ﾌｫｰｸ・爪・ﾛｯｸﾋﾟﾝ','亀裂・曲がり・摩耗・ﾛｯｸﾋﾟﾝの損傷や作動'],
+ ['ﾏｽﾄ・ﾁｪｰﾝ・ﾘﾌﾄ機構','ﾏｽﾄの変形・損傷・ﾁｪｰﾝの張り・均等性・給油'],
+ ['油圧ｼﾘﾝﾀﾞ・配管','ﾘﾌﾄ/ﾁﾙﾄｼﾘﾝﾀﾞ・油圧ﾎｰｽからの油漏れ・作動状態'],
+ ['操縦装置・操作ﾚﾊﾞｰ','ﾊﾝﾄﾞﾙの遊び・ｶﾞﾀ・各操作ﾚﾊﾞｰの作動状態'],
+ ['制動装置（ﾌﾞﾚｰｷ）','主ﾌﾞﾚｰｷ・駐車ﾌﾞﾚｰｷの効き・引きずり・踏みしろ'],
+ ['車輪・ﾀｲﾔ','空気圧・摩耗・亀裂・損傷・ﾎｲｰﾙﾎﾞﾙﾄの緩み'],
+ ['電気・計器・保安具','ﾗｲﾄ・方向指示器・ﾎｰﾝ・ﾊﾞｯｸﾌﾞｻﾞｰ・計器類作動'],
+ ['ﾍｯﾄﾞｶﾞｰﾄﾞ・ﾛｰﾄﾞﾚｽﾄ','変形・亀裂・損傷・取付ボルトの緩み・脱落']
+];
+
+const MAX_COLUMNS = 16;
+const CONFIRM_DEFAULT = '済';
+let dates = [];
+let entriesData = {};
+let saveTimer = null;
+let loaded = false;
+
+let wzCol = 0;
+let wzStep = 0;
+
+function setStatus(text, cls){
+  const el = document.getElementById('saveStatus');
+  if(!el) return;
+  el.textContent = text;
+  el.className = cls || '';
+}
+
+function collectInfo(){
+  return [...document.querySelectorAll('table.info-tbl input.cell-in')].map(i => i.value);
+}
+
+function applyInfo(arr){
+  const inputs = document.querySelectorAll('table.info-tbl input.cell-in');
+  (arr || []).forEach((v, i) => { if(inputs[i]) inputs[i].value = v; });
+}
+
+function saveData(){
+  if(!loaded) return;
+  clearTimeout(saveTimer);
+  setStatus('保存中...', 'saving');
+  saveTimer = setTimeout(() => {
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({ dates, entriesData, info: collectInfo() })
+    })
+    .then(res => res.json())
+    .then(() => setStatus('保存済み', 'saved'))
+    .catch(err => {
+      console.error('保存失敗', err);
+      setStatus('保存失敗（通信を確認してください）', 'error');
+    });
+  }, 800);
+}
+
+async function loadData(){
+  try {
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
+    if(Array.isArray(data.dates)) dates = data.dates;
+    if(data.entriesData && typeof data.entriesData === 'object') entriesData = data.entriesData;
+
+    // 管理番号が未保存（空）の場合は初期値を維持するため、空の保存値では上書きしない
+    const infoInputs = document.querySelectorAll('table.info-tbl input.cell-in');
+    const defaultKanri = infoInputs[4] ? infoInputs[4].value : '';
+    applyInfo(data.info);
+    if(infoInputs[4] && !infoInputs[4].value) infoInputs[4].value = defaultKanri;
+
+    for(let col=0; col<dates.length; col++){
+      const key = `confirm_${col}`;
+      if(entriesData[key] === '－' || entriesData[key] === undefined){
+        entriesData[key] = CONFIRM_DEFAULT;
+      }
+    }
+
+    loaded = true;
+    setStatus('読み込み完了', 'saved');
+  } catch(err) {
+    console.error('読み込み失敗', err);
+    setStatus('読み込み失敗（ページを再読み込みしてください）', 'error');
+  }
+}
+
+function initControls(){
+  const month = document.getElementById('newMonth');
+  const day = document.getElementById('newDay');
+  if(month && !month.options.length){
+    for(let i=1; i<=12; i++) month.add(new Option(i+'月', i));
+  }
+  if(day && !day.options.length){
+    for(let i=1; i<=31; i++) day.add(new Option(i+'日', i));
+  }
+}
+
+function setRemoveControls(){
+  const remove = document.getElementById('removeDate');
+  if(!remove) return;
+  remove.innerHTML = '';
+  dates.forEach((date, index) => {
+    remove.add(new Option(date, index));
+  });
+  const btn = document.getElementById('removeDateButton');
+  if(btn) btn.disabled = dates.length === 0;
+}
+
+function draw(){
+  const header = document.getElementById('dateRow');
+  const body = document.getElementById('checkBody');
+  const confirmRow = document.getElementById('confirmRow');
+
+  if(!header || !body || !confirmRow) return;
+
+  header.innerHTML = '';
+  for(let col=0; col<MAX_COLUMNS; col++){
+    const th = document.createElement('th');
+    const val = dates[col] || '';
+    const input = document.createElement('input');
+    input.className = 'cell-in';
+    input.value = val;
+    input.oninput = function(){
+      dates[col] = this.value.trim();
+      setRemoveControls();
+      renderWizard();
+      saveData();
+    };
+    th.appendChild(input);
+    header.appendChild(th);
+  }
+
+  body.innerHTML = '';
+  items.forEach((item, row) => {
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `<td class="num">${row+1}</td><td class="item-cell">${item[0]}</td><td class="focus-cell">${item[1]}</td>`;
+
+    for(let col=0; col<MAX_COLUMNS; col++){
+      const td = document.createElement('td');
+      const key = `${row}_${col}`;
+      let val = entriesData[key];
+
+      if(val === undefined){
+        val = (col < dates.length) ? '－' : '';
+        entriesData[key] = val;
+      }
+
+      const select = document.createElement('select');
+      select.className = 'cell-sel';
+      select.onchange = function(){
+        entriesData[key] = this.value;
+        renderWizard();
+        saveData();
+      };
+
+      ['', '○', '×', 'A', '－'].forEach(optVal => {
+        const opt = document.createElement('option');
+        opt.value = optVal;
+        opt.textContent = optVal;
+        if(optVal === val) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      td.appendChild(select);
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  });
+
+  confirmRow.innerHTML = '<td colspan="3" style="font-weight:bold; font-size:10.5px;">施工担当者　確認</td>';
+  for(let col=0; col<MAX_COLUMNS; col++){
+    const td = document.createElement('td');
+    const key = `confirm_${col}`;
+    let val = entriesData[key];
+    if(val === undefined){
+      val = (col < dates.length) ? CONFIRM_DEFAULT : '';
+      entriesData[key] = val;
+    }
+
+    const input = document.createElement('input');
+    input.className = 'cell-in confirm-in';
+    input.value = val;
+    input.oninput = function(){
+      entriesData[key] = this.value;
+      saveData();
+    };
+
+    td.appendChild(input);
+    confirmRow.appendChild(td);
+  }
+
+  setRemoveControls();
+  renderWizard();
+}
+
+function renderWizard(){
+  const box = document.getElementById('wizardBody');
+  if(!box) return;
+
+  if(dates.length === 0){
+    box.innerHTML = '<div class="wz-empty">まず上の「日付を追加」で点検日を登録してください。</div>';
+    return;
+  }
+  if(wzCol >= dates.length) wzCol = dates.length - 1;
+  if(wzCol < 0) wzCol = 0;
+
+  const total = items.length;
+  const done = wzStep >= total;
+  const pct = Math.min(100, Math.round(wzStep / total * 100));
+
+  let html = '';
+  html += '<div class="wz-daybar"><label style="flex:0 0 auto;">点検日</label><select id="wzDate">';
+  dates.forEach((d, i) => {
+    html += `<option value="${i}"${i===wzCol?' selected':''}>${d}</option>`;
+  });
+  html += '</select></div>';
+
+  html += `<div class="wz-progress">${done ? '全項目 入力完了' : `質問 ${wzStep+1} / ${total}`}</div>`;
+  html += `<div class="wz-bar"><div style="width:${pct}%"></div></div>`;
+
+  if(!done){
+    const cur = entriesData[`${wzStep}_${wzCol}`];
+    const mk = (v, label, sub) =>
+      `<button type="button" class="${cur===v?'sel':''}" data-v="${v}">${label}<small>${sub}</small></button>`;
+    html += `<div class="wz-card">
+      <div class="wz-no">№${wzStep+1}</div>
+      <div class="wz-item">${items[wzStep][0]}</div>
+      <div class="wz-focus">${items[wzStep][1]}</div>
+    </div>`;
+    html += '<div class="wz-choices">'
+      + mk('○','○','良好')
+      + mk('×','×','調整又は要修理')
+      + mk('A','A','調整又は補修')
+      + mk('－','－','該当無し')
+      + '</div>';
+    html += `<div class="wz-nav">
+      <button type="button" id="wzPrev"${wzStep===0?' disabled':''}>← 前へ</button>
+      <button type="button" id="wzNext">次へ →</button>
+    </div>`;
+    html += '<div class="wz-bulk"><button type="button" id="wzAllOk">この日の全項目を「○」にする</button></div>';
+  } else {
+    html += '<div class="wz-done">✔ すべての項目の入力が完了しました</div>';
+    html += `<div class="wz-nav">
+      <button type="button" id="wzPrev">← 戻る</button>
+      <button type="button" id="wzRestart">最初からやり直す</button>
+    </div>`;
+  }
+
+  const cKey = `confirm_${wzCol}`;
+  html += `<div class="wz-confirm">施工担当者 確認：<input id="wzConfirm" value="${(entriesData[cKey]||'').replace(/"/g,'&quot;')}"></div>`;
+
+  box.innerHTML = html;
+
+  box.querySelector('#wzDate').onchange = function(){
+    wzCol = +this.value;
+    wzStep = 0;
+    renderWizard();
+  };
+  box.querySelectorAll('.wz-choices button').forEach(b => {
+    b.onclick = () => {
+      entriesData[`${wzStep}_${wzCol}`] = b.dataset.v;
+      wzStep++;
+      draw();
+      saveData();
+    };
+  });
+  const prev = box.querySelector('#wzPrev');
+  if(prev) prev.onclick = () => { if(wzStep>0){ wzStep--; renderWizard(); } };
+  const next = box.querySelector('#wzNext');
+  if(next) next.onclick = () => { wzStep++; renderWizard(); };
+  const allOk = box.querySelector('#wzAllOk');
+  if(allOk) allOk.onclick = () => {
+    for(let r=0; r<items.length; r++) entriesData[`${r}_${wzCol}`] = '○';
+    wzStep = items.length;
+    draw();
+    saveData();
+  };
+  const restart = box.querySelector('#wzRestart');
+  if(restart) restart.onclick = () => { wzStep = 0; renderWizard(); };
+  box.querySelector('#wzConfirm').oninput = function(){
+    entriesData[cKey] = this.value;
+    const inputs = document.querySelectorAll('#confirmRow input.confirm-in');
+    if(inputs[wzCol]) inputs[wzCol].value = this.value;
+    saveData();
+  };
+}
+
+async function exportPdf(){
+  const btn = document.getElementById('print');
+  const originalText = btn.textContent;
+
+  const win = window.open('', '_blank');
+  if(win){
+    win.document.write('<p style="font-family:sans-serif;padding:20px;">PDFを生成しています...</p>');
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'PDF生成中...';
+
+  const target = document.getElementById('exportArea');
+  const prevStyle = {
+    width: target.style.width,
+    minWidth: target.style.minWidth,
+    boxShadow: target.style.boxShadow
+  };
+  const replaced = [];
+
+  try {
+    if(typeof html2canvas === 'undefined' || !window.jspdf){
+      throw new Error('PDFライブラリの読み込みに失敗しました。通信環境を確認してください。');
+    }
+
+    target.style.width = '285mm';
+    target.style.minWidth = '285mm';
+    target.style.boxShadow = 'none';
+
+    target.querySelectorAll('select.cell-sel').forEach(sel => {
+      const span = document.createElement('div');
+      span.className = 'pdf-sym' + (sel.value === '○' ? ' is-circle' : '');
+      span.textContent = sel.value;
+      sel.style.display = 'none';
+      sel.parentNode.insertBefore(span, sel);
+      replaced.push({ sel, span });
+    });
+
+    target.querySelectorAll('#dateRow input.cell-in').forEach(inp => {
+      const span = document.createElement('div');
+      span.className = 'pdf-date';
+      span.textContent = inp.value;
+      inp.style.display = 'none';
+      inp.parentNode.insertBefore(span, inp);
+      replaced.push({ sel: inp, span });
+    });
+
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      windowWidth: target.scrollWidth
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+
+    const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+    const imgW = canvas.width * ratio;
+    const imgH = canvas.height * ratio;
+    const x = (pageW - imgW) / 2;
+    const y = (pageH - imgH) / 2;
+
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, y, imgW, imgH);
+
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+
+    if(win){
+      win.location.href = url;
+    } else {
+      window.location.href = url;
+    }
+  } catch(err) {
+    console.error(err);
+    if(win) win.close();
+    alert('PDF出力に失敗しました：' + err.message);
+  } finally {
+    replaced.forEach(({ sel, span }) => {
+      span.remove();
+      sel.style.display = '';
+    });
+    target.style.width = prevStyle.width;
+    target.style.minWidth = prevStyle.minWidth;
+    target.style.boxShadow = prevStyle.boxShadow;
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  initControls();
+
+  await loadData();
+
+  document.getElementById('addDate').addEventListener('click', () => {
+    if(dates.length >= MAX_COLUMNS){
+      alert('これ以上日付を追加できません（最大16列までです）。');
+      return;
+    }
+    const m = document.getElementById('newMonth').value;
+    const d = document.getElementById('newDay').value;
+    const value = `${m}/${d}`;
+
+    if(dates.includes(value)){
+      alert('同じ日付はすでに登録されています。');
+      return;
+    }
+
+    const newColIdx = dates.length;
+    for(let r=0; r<items.length; r++){
+      entriesData[`${r}_${newColIdx}`] = '－';
+    }
+    entriesData[`confirm_${newColIdx}`] = CONFIRM_DEFAULT;
+
+    dates.push(value);
+    wzCol = newColIdx;
+    wzStep = 0;
+    draw();
+    saveData();
+  });
+
+  document.getElementById('removeDateButton').addEventListener('click', () => {
+    const index = +document.getElementById('removeDate').value;
+    if(Number.isNaN(index) || index < 0 || index >= dates.length) return;
+
+    for(let col=index; col<MAX_COLUMNS-1; col++){
+      for(let r=0; r<items.length; r++){
+        entriesData[`${r}_${col}`] = entriesData[`${r}_${col+1}`];
+      }
+      entriesData[`confirm_${col}`] = entriesData[`confirm_${col+1}`];
+    }
+    for(let r=0; r<items.length; r++){
+      delete entriesData[`${r}_${MAX_COLUMNS-1}`];
+    }
+    delete entriesData[`confirm_${MAX_COLUMNS-1}`];
+
+    dates.splice(index, 1);
+    wzCol = Math.max(0, Math.min(wzCol, dates.length - 1));
+    wzStep = 0;
+    draw();
+    saveData();
+  });
+
+  document.querySelectorAll('table.info-tbl input.cell-in').forEach(i => {
+    i.addEventListener('input', saveData);
+  });
+
+  document.getElementById('print').addEventListener('click', exportPdf);
+
+  wzCol = Math.max(0, dates.length - 1);
+  wzStep = 0;
+  draw();
+});
+</script>
+</body>
+</html>
